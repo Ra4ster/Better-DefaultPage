@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { getTheme, setTheme, type ThemeMode, type Accent } from "@/lib/theme";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,36 @@ const DEFAULT_PREFS: Prefs = {
 
 export default function SettingsPage() {
   const [prefs, setPrefs] = React.useState<Prefs>(DEFAULT_PREFS);
+  const [theme, setThemeState] = React.useState(() => getTheme());
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+  setThemeState(getTheme());
+  setMounted(true);
+}, []);
+
+  function updateTheme(next: { mode: ThemeMode; accent: Accent }) {
+    setTheme(next);
+    setThemeState(next);
+    // apply immediately without refresh
+    document.documentElement.classList.toggle(
+      "dark",
+      next.mode === "dark" ||
+        (next.mode === "system" &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches),
+    );
+    // accent vars
+    const map = {
+      blue: { p: "oklch(0.62 0.18 250)", pf: "oklch(0.985 0 0)" },
+      green: { p: "oklch(0.70 0.17 155)", pf: "oklch(0.145 0 0)" },
+      purple: { p: "oklch(0.62 0.20 300)", pf: "oklch(0.985 0 0)" },
+    } as const;
+    document.documentElement.style.setProperty("--primary", map[next.accent].p);
+    document.documentElement.style.setProperty(
+      "--primary-foreground",
+      map[next.accent].pf,
+    );
+  }
 
   React.useEffect(() => {
     setPrefs(lsGet(KEY, DEFAULT_PREFS));
@@ -53,13 +84,60 @@ export default function SettingsPage() {
             <span className="text-primary">Better</span>{" "}
             <span className="text-muted-foreground">DefaultPage</span>
           </div>
-          <a href="/" className="text-sm text-primary underline underline-offset-4">
+          <a
+            href="/"
+            className="text-sm text-primary underline underline-offset-4"
+          >
             Back
           </a>
         </div>
       </header>
 
       <div className="mx-auto max-w-3xl px-4 py-6 space-y-4">
+      {mounted && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Appearance</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Theme</div>
+              <div className="flex gap-2">
+                {(["system", "light", "dark"] as const).map((mode) => (
+                  <Button
+                    key={mode}
+                    variant={theme.mode === mode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => updateTheme({ ...theme, mode })}
+                  >
+                    {mode}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Accent</div>
+              <div className="flex gap-2">
+                {(["blue", "green", "purple"] as const).map((accent) => (
+                  <Button
+                    key={accent}
+                    variant={theme.accent === accent ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => updateTheme({ ...theme, accent })}
+                  >
+                    {accent}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-xs text-muted-foreground">
+              Changes apply instantly and are saved.
+            </div>
+          </CardContent>
+        </Card>
+      )}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Modules</CardTitle>
@@ -116,7 +194,12 @@ export default function SettingsPage() {
               <Button type="button" variant="outline" onClick={clearNotepad}>
                 Clear notepad
               </Button>
-              <Button type="button" variant="outline" onClick={resetAll} className="text-destructive border-destructive hover:bg-destructive/10">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={resetAll}
+                className="text-destructive border-destructive hover:bg-destructive/10"
+              >
                 Reset everything
               </Button>
             </div>
