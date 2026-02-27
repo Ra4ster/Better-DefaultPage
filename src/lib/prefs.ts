@@ -4,6 +4,7 @@ export type Prefs = {
   showLinks: boolean;
   showNews: boolean;
   showNotes: boolean;
+  background: "none" | "gradient" | "photo";
   feeds: { hn: boolean; npr: boolean; verge: boolean };
 };
 
@@ -13,6 +14,7 @@ export const DEFAULT_PREFS: Prefs = {
   showLinks: true,
   showNews: true,
   showNotes: true,
+  background: "gradient",
   feeds: { hn: true, npr: true, verge: true },
 };
 
